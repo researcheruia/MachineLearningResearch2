@@ -1,3 +1,4 @@
+"""El objetivo de este módulo es optimizar la ejecución del programa."""
 from time import sleep
 from threading import Thread
 

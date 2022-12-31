@@ -1,3 +1,9 @@
+"""En este módulo se creó una clase abstracta que, en otras palabras, es un objeto de Python que pretende ser un
+generador de los url presentes en el sitio que se ingresa como parámetro en el método .__init__(). Cabe destacar
+que las clases abstractas no pueden inicializarse instancias directamente en el código, sino que se debe declarar
+subclases concretas, que es precisamente lo que se hace en los módulos BankSoup.py y MedSoup.py."""
+# TODO Se debe investigar sobre cómo lograr declarar adecuadamente de modo que los objetos de sus subclases sean
+#  también instancias de un "Generator".
 from abc import ABC, abstractmethod
 from time import sleep
 
@@ -9,8 +15,10 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 
 
 class AbstractUrlsContainer(ABC):
-    """Una instancia de esta clase es un contenedor."""
-
+    """Una instancia hipotética de esta clase lo que hace es comenzar a buscar links en el link que se le ingrese
+    como parámetro de inicialización. Además, guarda los links en un iterador. No se darán detalles de cada método,
+    pues no se considera necesario dado que se asume que los lectores de esta documentación no conocen el lenguaje
+    Python 3.11"""
     @abstractmethod
     def __init__(self, executable_path, domain, parser="html.parser"):
         self.pages = set()
@@ -64,12 +72,3 @@ class AbstractUrlsContainer(ABC):
 
     def __iter__(self):
         return iter(self.pages)
-
-
-
-
-
-
-
-
-

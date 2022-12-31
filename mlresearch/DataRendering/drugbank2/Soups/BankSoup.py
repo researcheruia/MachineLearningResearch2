@@ -1,8 +1,9 @@
+"""En este módulo se declara una clase concreta inherente de AbstractUrlsContainer"""
+# TODO Las mejorías que se le pueden hacer a esta clase están más relacionadas con lo que se le pueda implementar a
+#  la clase abstracta padre. Sin embargo, se piensa que es posible optimizar la descarga de las imágenes
 from abc import ABCMeta
 from json import dump
-from pathlib import Path
 from time import sleep
-from threading import Thread
 
 
 import numpy as np
@@ -16,9 +17,18 @@ from . import AbstractUrlsContainer
 
 
 class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
+    """BankSoup es una clase específica que sirve para descargar información sobre fármacos de
+    https://go.drugbank.com Lo más importante de la clase es que descarga las imágenes de las moléculas en formato
+    .svg. Adicionalmente, recopila información de las masas molares de cada activo, así como otra información de tipo
+    identificativa."""
 
     def __init__(self, executable_path, domain, parser="html.parser"):
-        self.get_all_info(domain, executable_path, parser, "C:/Users/mvmor/OneDrive/Escritorio/MachineLearningResearch/mlresearch/media")
+        self.get_all_info(
+            domain,
+            executable_path,
+            parser,
+            "C:/Users/mvmor/OneDrive/Escritorio/MachineLearningResearch/mlresearch/media"
+        )
         super().__init__(executable_path, domain, parser)
 
     def first_soup(self):
@@ -132,7 +142,3 @@ class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
     @staticmethod
     def get_simple_data(soup, identifier):
         return soup.find("dt", {"id": identifier}).find_next_sibling("dd").text
-
-
-
-

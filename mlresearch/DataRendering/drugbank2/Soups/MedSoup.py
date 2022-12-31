@@ -1,3 +1,6 @@
+"""Módulo análogo a BankSoup.py, solo que creado específicamente para la información existente en
+https://reference.medscape.com"""
+# TODO Las mejorías que se le pueden hacer a este módulo van de la mano con las que se le pueden hacer a BankSoup.py
 from abc import ABCMeta
 from json import dump
 from time import sleep
@@ -74,7 +77,7 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
         return super().get_soup(executable_path, url, parser)
 
     def get_all_urls(self, soup, executable_path, domain, parser="html.parser"):
-        second_soup = soup.find("div", attrs={"id": "drugdbmain2"})
+        soup.find("div", attrs={"id": "drugdbmain2"})
         for links in soup.find_all("a"):
             if "href" in links.attrs:
                 if links.attrs["href"] in self.pages or "drugs" not in links.attrs["href"]:
