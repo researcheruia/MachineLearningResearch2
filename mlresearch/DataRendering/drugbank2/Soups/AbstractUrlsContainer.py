@@ -30,45 +30,54 @@ class AbstractUrlsContainer(ABC):
     def prepare_driver(executable_path):
         options = Options()
         options.add_argument("--headless")
-        driver = webdriver.Firefox(executable_path=executable_path, options=options)
+        try:
+            driver = webdriver.Firefox(executable_path=executable_path, options=options)
+        except TimeoutException:
+            return False
         return driver
 
     @abstractmethod
     def get_page_source(self, executable_path, url):
         driver = self.prepare_driver(executable_path)
-        driver.get(url)
-        page_source = driver.page_source
-        driver.quit()
-        return page_source
+        if driver:
+            driver.get(url)
+            page_source = driver.page_source
+            driver.quit()
+            return page_source
+        return False
 
     @abstractmethod
     def get_soup(self, executable_path, url, parser="html.parser"):
         page_source = self.get_page_source(executable_path, url)
-        return BeautifulSoup(page_source, parser)
+        if page_source:
+            return BeautifulSoup(page_source, parser)
+        return False
 
     @abstractmethod
     def get_all_urls(self, soup, executable_path, domain, parser="html.parser"):
-        for links in soup.find_all("a"):
-            if "href" in links.attrs:
-                if links.attrs["href"] in self.pages:
-                    continue
-                else:
-                    new_link = links.attrs["href"]
-                    self.pages.add(new_link)
-                    sleep(3)
-                    try:
-                        soup = self.get_soup(executable_path, "".join([domain, new_link]), parser)
-                    except WebDriverException:
-                        soup = self.get_soup(executable_path, new_link, parser)
-                    try:
-                        self.get_all_urls(soup, executable_path, domain, parser)
-                    except TimeoutException:
-                        print("TimedPromise timed out after 300000 ms")
+        if soup:
+            for links in soup.find_all("a"):
+                if "href" in links.attrs:
+                    if links.attrs["href"] in self.pages:
                         continue
-                    except RecursionError:
-                        print("RecursionError")
-                        continue
-        return 0, len(self.pages) - 1
+                    else:
+                        new_link = links.attrs["href"]
+                        self.pages.add(new_link)
+                        sleep(3)
+                        try:
+                            soup = self.get_soup(executable_path, "".join([domain, new_link]), parser)
+                        except WebDriverException:
+                            soup = self.get_soup(executable_path, new_link, parser)
+                        try:
+                            self.get_all_urls(soup, executable_path, domain, parser)
+                        except TimeoutException:
+                            print("TimedPromise timed out after 300000 ms")
+                            continue
+                        except RecursionError:
+                            print("RecursionError")
+                            continue
+            return 0, len(self.pages) - 1
+        return False
 
     def __iter__(self):
         return iter(self.pages)

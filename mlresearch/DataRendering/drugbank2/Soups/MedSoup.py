@@ -110,8 +110,11 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
                 continue
             else:
                 dict_["drugs"].append(self.get_adverse_effects(soup))
-                with open("adverse.json", "w") as json_file:
-                    dump(dict_, json_file)
+                try:
+                    with open("adverse.json", "w") as json_file:
+                        dump(dict_, json_file)
+                except PermissionError:
+                    continue
         return iter(dict_["drugs"])
 
     def get_adverse_effects(self, soup):

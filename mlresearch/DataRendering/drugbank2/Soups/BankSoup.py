@@ -97,8 +97,11 @@ class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
                 continue
             else:
                 dict_["drugs"].append(molecules)
-                with open("molecules.json", "w") as json_file:
-                    dump(dict_, json_file)
+                try:
+                    with open("molecules.json", "w") as json_file:
+                        dump(dict_, json_file)
+                except PermissionError:
+                    continue
         return molecules_gen
 
     @staticmethod
@@ -106,7 +109,7 @@ class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
         try:
             href = soup.find("div", {"class": identifier}).find("a", {"class": "moldbi-vector-thumbnail"}).get("href")
         except AttributeError:
-            return None
+            return False
         url_image = "https://go.drugbank.com{}".format(href)
         session = Session()
         response = session.get(url_image, headers=default_headers(), stream=True)
@@ -119,6 +122,8 @@ class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
                 try:
                     molecule_img.write(response.content)
                 except ChunkedEncodingError:
+                    return False
+                except PermissionError:
                     return False
             return "".join((path, name, ".svg"))
         return False
