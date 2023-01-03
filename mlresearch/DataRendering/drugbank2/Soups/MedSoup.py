@@ -65,7 +65,6 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
             "Xerostomia"
         ]
         super().__init__(executable_path, domain, parser)
-        self.info = self.get_all_info(executable_path, parser)
 
     def prepare_driver(self, executable_path):
         return super().prepare_driver(executable_path)
@@ -77,7 +76,8 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
         return super().get_soup(executable_path, url, parser)
 
     def get_all_urls(self, soup, executable_path, domain, parser="html.parser"):
-        soup.find("div", attrs={"id": "drugdbmain2"})
+        soup.find("ul", attrs={"class": "classdruglist"})
+        counter = 1
         for links in soup.find_all("a"):
             if "href" in links.attrs:
                 if links.attrs["href"] in self.pages or "drugs" not in links.attrs["href"]:
@@ -90,9 +90,18 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
                         soup = self.get_soup(executable_path, new_link, parser)
                     except WebDriverException:
                         soup = self.get_soup(executable_path, "".join([domain, new_link]), parser)
+                    adverse = self.get_adverse_effects(soup)
+                    if adverse:
+                        path = f"C:/Users/mvmor/OneDrive/Escritorio/MachineLearningResearch/mlresearch/json2/{counter}.json"
+                        try:
+                            with open(path, "w") as json_file:
+                                dump(adverse, json_file)
+                        except PermissionError:
+                            continue
+                        counter += 1
                     try:
                         self.get_all_urls(soup, executable_path, domain, parser)
-                    except TimeoutException:
+                    except WebDriverException:
                         print("TimedPromise timed out after 300000 ms")
                         continue
                     except RecursionError:
@@ -118,11 +127,13 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
         return iter(dict_["drugs"])
 
     def get_adverse_effects(self, soup):
+        main = soup.find("div", attrs={"id": "content_4"})
         name = soup.find("span", attrs={"class": "drug_section_link"})
         if name:
-            h2 = soup.find("h2", text="Adverse Effects")
+            h2 = main.find("h2", text="Adverse Effects")
             if h2:
-                text = [p.text for p in h2.find_all_next("p") if p.text in self.adverse_effects]
+                div = h2.find_next_sibling("div", attrs={"class": "refsection_content"})
+                text = [p.text for p in div.find_all("p") if p.text in self.adverse_effects]
             else:
                 return False
             return {

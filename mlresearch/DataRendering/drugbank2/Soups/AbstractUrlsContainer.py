@@ -30,15 +30,15 @@ class AbstractUrlsContainer(ABC):
     def prepare_driver(executable_path):
         options = Options()
         options.add_argument("--headless")
-        try:
-            driver = webdriver.Firefox(executable_path=executable_path, options=options)
-        except TimeoutException:
-            return False
+        driver = webdriver.Firefox(executable_path=executable_path, options=options)
         return driver
 
     @abstractmethod
     def get_page_source(self, executable_path, url):
-        driver = self.prepare_driver(executable_path)
+        try:
+            driver = self.prepare_driver(executable_path)
+        except WebDriverException:
+            return False
         if driver:
             driver.get(url)
             page_source = driver.page_source

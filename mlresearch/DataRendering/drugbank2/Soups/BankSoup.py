@@ -3,6 +3,7 @@
 #  la clase abstracta padre. Sin embargo, se piensa que es posible optimizar la descarga de las imágenes
 from abc import ABCMeta
 from json import dump
+from os.path import exists
 from time import sleep
 
 
@@ -10,7 +11,8 @@ import numpy as np
 from re import compile
 from requests import Session
 from requests.utils import default_headers
-from requests.exceptions import ChunkedEncodingError
+from requests.exceptions import ChunkedEncodingError, ConnectionError, SSLError
+from selenium.common.exceptions import WebDriverException
 
 
 from . import AbstractUrlsContainer
@@ -77,7 +79,8 @@ class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
         else:
             return False
 
-    def get_all_info(self, domain, executable_path, parser, images_path,):
+    def get_all_info(self, domain, executable_path, parser, images_path):
+        json_path = "C:/Users/mvmor/OneDrive/Escritorio/MachineLearningResearch/mlresearch/json/"
         list_simple_data = [
             "generic-name",
             "iupac-name",
@@ -85,21 +88,19 @@ class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
             "cas-number",
             "smiles"
         ]
-        url_pattern = ("{}/drugs/DB{}".format(domain, str(number)[1:]) for number in range(100000, 199999))
+        url_pattern = ("{}/drugs/DB{}".format(domain, str(number)[1:]) for number in range(101130, 199999))
         molecules_gen = (self.get_molecular_info(
             list_simple_data,
             self.get_soup(executable_path, url, parser),
             images_path
         ) for url in url_pattern)
-        dict_ = {"drugs": []}
         for molecules in molecules_gen:
             if not molecules:
                 continue
             else:
-                dict_["drugs"].append(molecules)
                 try:
-                    with open("molecules.json", "w") as json_file:
-                        dump(dict_, json_file)
+                    with open(f"{json_path}{(molecules['molecule'])[-11:-4]}.json", "w") as json_file:
+                        dump(molecules, json_file)
                 except PermissionError:
                     continue
         return molecules_gen
@@ -112,12 +113,22 @@ class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
             return False
         url_image = "https://go.drugbank.com{}".format(href)
         session = Session()
-        response = session.get(url_image, headers=default_headers(), stream=True)
+        try:
+            response = session.get(url_image, headers=default_headers(), stream=True)
+        except SSLError:
+            return False
+        except ConnectionError:
+            return False
+        except WebDriverException:
+            return False
         session.close()
         pattern_name = compile(r"/DB\d{5}")
-        name = pattern_name.findall(href)[0]
+        try:
+            name = pattern_name.findall(href)[0]
+        except IndexError:
+            return False
         sleep(3)
-        if response.ok:
+        if response.ok and not exists("".join((path, name, ".svg"))):
             with open("".join((path, name, ".svg")), "wb") as molecule_img:
                 try:
                     molecule_img.write(response.content)

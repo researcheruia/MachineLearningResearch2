@@ -21,7 +21,7 @@ def med_scape_data():
 
 def executing():
     threads = []
-    for i in range(10):
+    for i in range(5):
         t1 = Thread(target=drug_bank_data)
         threads.append(t1)
         t2 = Thread(target=med_scape_data)
