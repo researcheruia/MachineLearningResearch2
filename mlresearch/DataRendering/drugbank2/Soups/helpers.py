@@ -1,4 +1,5 @@
 """El objetivo de este módulo es optimizar la ejecución del programa."""
+from random import choice
 from time import sleep
 from threading import Thread
 
@@ -21,10 +22,10 @@ def med_scape_data():
 
 def executing():
     threads = []
-    for i in range(5):
-        t1 = Thread(target=drug_bank_data)
+    for i in range(6):
+        t1 = Thread(target=med_scape_data)
         threads.append(t1)
-        t2 = Thread(target=med_scape_data)
+        t2 = Thread(target=drug_bank_data)
         threads.append(t2)
     for t in threads:
         t.start()

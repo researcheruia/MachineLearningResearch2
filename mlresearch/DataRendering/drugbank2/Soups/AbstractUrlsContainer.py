@@ -40,7 +40,10 @@ class AbstractUrlsContainer(ABC):
         except WebDriverException:
             return False
         if driver:
-            driver.get(url)
+            try:
+                driver.get(url)
+            except WebDriverException:
+                return False
             page_source = driver.page_source
             driver.quit()
             return page_source

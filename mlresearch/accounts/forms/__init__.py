@@ -1,0 +1,4 @@
+from .CustomUserChangeForm import CustomUserChangeForm
+from .CustomUserCreationForm import CustomUserCreationForm
+from .CustomAuthenticationForm import CustomAuthenticationForm
+

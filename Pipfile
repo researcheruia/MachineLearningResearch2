@@ -13,6 +13,8 @@ requests = "*"
 bs4 = "*"
 pillow = "*"
 selenium = "*"
+mysqlclient = "*"
+scipy = "*"
 
 [dev-packages]
 

@@ -2,11 +2,13 @@
 https://reference.medscape.com"""
 # TODO Las mejorías que se le pueden hacer a este módulo van de la mano con las que se le pueden hacer a BankSoup.py
 from abc import ABCMeta
+from copy import deepcopy
 from json import dump
-from time import sleep
+from os.path import exists
+import re
 
 
-from selenium.common.exceptions import TimeoutException, WebDriverException
+from selenium.common.exceptions import WebDriverException
 
 
 from . import AbstractUrlsContainer
@@ -64,6 +66,7 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
             "Weight gain",
             "Xerostomia"
         ]
+        self.get_all_info(executable_path, parser)
         super().__init__(executable_path, domain, parser)
 
     def prepare_driver(self, executable_path):
@@ -76,69 +79,74 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
         return super().get_soup(executable_path, url, parser)
 
     def get_all_urls(self, soup, executable_path, domain, parser="html.parser"):
-        soup.find("ul", attrs={"class": "classdruglist"})
-        counter = 1
-        for links in soup.find_all("a"):
-            if "href" in links.attrs:
-                if links.attrs["href"] in self.pages or "drugs" not in links.attrs["href"]:
-                    continue
-                else:
-                    new_link = links.attrs["href"]
-                    self.pages.add(new_link)
-                    sleep(3)
-                    try:
-                        soup = self.get_soup(executable_path, new_link, parser)
-                    except WebDriverException:
-                        soup = self.get_soup(executable_path, "".join([domain, new_link]), parser)
-                    adverse = self.get_adverse_effects(soup)
-                    if adverse:
-                        path = f"C:/Users/mvmor/OneDrive/Escritorio/MachineLearningResearch/mlresearch/json2/{counter}.json"
-                        try:
-                            with open(path, "w") as json_file:
-                                dump(adverse, json_file)
-                        except PermissionError:
-                            continue
-                        counter += 1
-                    try:
-                        self.get_all_urls(soup, executable_path, domain, parser)
-                    except WebDriverException:
-                        print("TimedPromise timed out after 300000 ms")
-                        continue
-                    except RecursionError:
-                        print("RecursionError")
-                        continue
-        return 0, len(self.pages) - 1
+        super().get_all_urls(soup, executable_path, domain, parser)
 
-    def get_all_info(self, executable_path, parser):
-        dict_ = {
-            "drugs": []
-        }
-        for url in self.pages:
-            soup = self.get_soup(executable_path, url, parser)
-            if not self.get_adverse_effects(soup):
-                continue
-            else:
-                dict_["drugs"].append(self.get_adverse_effects(soup))
-                try:
-                    with open("adverse.json", "w") as json_file:
-                        dump(dict_, json_file)
-                except PermissionError:
-                    continue
-        return iter(dict_["drugs"])
+    def compare_effect(self, effect):
+        for element in self.adverse_effects:
+            if re.match(element, effect, flags=re.IGNORECASE):
+                return element
+        return effect
 
-    def get_adverse_effects(self, soup):
-        main = soup.find("div", attrs={"id": "content_4"})
-        name = soup.find("span", attrs={"class": "drug_section_link"})
+    def get_adverse_effects(self, soup, path):
+        try:
+            name = soup.find("span", attrs={"class": "drug_section_link"})
+        except AttributeError:
+            return False
         if name:
-            h2 = main.find("h2", text="Adverse Effects")
-            if h2:
-                div = h2.find_next_sibling("div", attrs={"class": "refsection_content"})
-                text = [p.text for p in div.find_all("p") if p.text in self.adverse_effects]
-            else:
-                return False
-            return {
-                name: {
-                    key: int(key in text) for key in self.adverse_effects
+            name = name.text
+            div = soup.find("div", attrs={"id": "content_4"})
+            if div:
+                div2 = div.find("div", attrs={"class": "refsection_content"})
+                text = [p.text for p in div2.find_all("p") if p.text in self.adverse_effects]
+                text_2 = list(map(self.compare_effect, text))
+                dict_ = {
+                    name: {
+                        key: int(bool(key in text_2)) for key in self.adverse_effects
+                    }
                 }
-            }
+                if not exists(path.format(name.replace("/","-"))):
+                    with open(path.format(name.replace("/","-")), "w") as js:
+                        dump(dict_, js)
+                    return dict_
+                return False
+            return False
         return False
+
+    def get_all_info(self, executable_path, parser="html.parser"):
+        path = "C:/Users/mvmor/OneDrive/Escritorio/MachineLearningResearch/mlresearch/json2/{}.json"
+        with open("links.txt", "r") as links_file:
+            links = set([link.strip("\n") for link in links_file.readlines()])
+        links2 = deepcopy(links)
+        for link in links2:
+            links.remove(link)
+            soup = self.get_soup(executable_path, link, parser)
+            if soup:
+                soup2 = soup.find("ul", attrs={"class": "classdruglist" })
+                if soup2:
+                    a = soup2.find_all("a")
+                    for tags in a:
+                        url = tags.attrs["href"]
+                        if url:
+                            s = self.get_soup(executable_path, url, parser)
+                            dict_ = self.get_adverse_effects(s, path)
+                            if dict_:
+                                print(dict_)
+                                continue
+                            else:
+                                with open("links.txt", "w") as l_file:
+                                    links.add(url)
+                                    try:
+                                        print(*list(links), sep="\n", file=l_file)
+                                    except PermissionError:
+                                        print(*list(links), sep="\n")
+                                self.get_all_info(executable_path, parser)
+                        else:
+                            continue
+                else:
+                    continue
+            else:
+                continue
+
+
+
+

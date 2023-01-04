@@ -88,7 +88,7 @@ class BankSoup(AbstractUrlsContainer, metaclass=ABCMeta):
             "cas-number",
             "smiles"
         ]
-        url_pattern = ("{}/drugs/DB{}".format(domain, str(number)[1:]) for number in range(101130, 199999))
+        url_pattern = ("{}/drugs/DB{}".format(domain, str(number)[1:]) for number in range(103147, 199999))
         molecules_gen = (self.get_molecular_info(
             list_simple_data,
             self.get_soup(executable_path, url, parser),
