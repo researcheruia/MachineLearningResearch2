@@ -1,0 +1,28 @@
+<!-- templates/registration/signup.html -->
+{% extends "_base.html" %}
+
+
+{% block title %}Registrarse{% endblock %}
+
+
+{% block content %}
+    <div id="sign-up form" class="d-flex flex-column w-100">
+        <div class="flex-row d-flex">
+            <h1 class="col-12 text-center">Registrarse</h1>
+        </div>
+        <div class="flex-row d-flex">
+            <form class="form" method="post">
+                {% for field in form %}
+                    <div class="form-group m-4">
+                        <div class="form-row">{{ field.label }}</div>
+                        <div class="form-row">{{ field }}</div>
+                    </div>
+                {% endfor %}
+                {% csrf_token %}
+               <div class="form-row">
+                   <button type="submit" class="btn btn-success">Iniciar sesi&oacute;n</button>
+               </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}

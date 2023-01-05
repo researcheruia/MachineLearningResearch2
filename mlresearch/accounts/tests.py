@@ -1,7 +1,9 @@
 from django.test import TestCase
+from django.urls import reverse
 
 
 from .models import CustomUser
+from .forms import CustomUserCreationForm
 
 
 class CustomUserTest(TestCase):
@@ -39,4 +41,18 @@ class CustomUserTest(TestCase):
         self.assertTrue(admin_user.is_staff)
         self.assertTrue(admin_user.is_superuser)
 
+
+class SignupPageTest(TestCase):
+    def setUp(self):
+        url = reverse("signup")
+        self.response = self.client(url)
+
+    def test_signup_template(self):
+        self.assertEqual(self.response.status_code, 200)
+        self.assertTemplateUsed(self.response, "registration/signup.html")
+
+    def test_signup_form(self):
+        form = self.response.context.get("form")
+        self.assertIsInstance(form, CustomUserCreationForm)
+        self.assertContains(self.response, "csrfmiddlewaretoken")
 

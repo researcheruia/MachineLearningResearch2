@@ -23,7 +23,8 @@ class AbstractUrlsContainer(ABC):
     def __init__(self, executable_path, domain, parser="html.parser"):
         self.pages = set()
         self.first_soup = self.get_soup(executable_path, domain, parser)
-        self.num, self.end = self.get_all_urls(self.first_soup, executable_path, domain, parser)
+        self.get_all_urls(self.first_soup, executable_path, domain, parser)
+        self.num, self.end = 0, len(self.pages) - 1
 
     @staticmethod
     @abstractmethod
@@ -79,8 +80,6 @@ class AbstractUrlsContainer(ABC):
                         except RecursionError:
                             print("RecursionError")
                             continue
-            return 0, len(self.pages) - 1
-        return False
 
     def __iter__(self):
         return iter(self.pages)

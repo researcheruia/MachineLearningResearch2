@@ -4,5 +4,3 @@ from django.db import models
 
 class CustomUser(AbstractUser):
     birth_date = models.DateField()
-
-    USERNAME_FIELD = "email"

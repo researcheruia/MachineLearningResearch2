@@ -15,7 +15,7 @@ def drug_bank_data():
 
 def med_scape_data():
     executable_path = "geckodriver.exe"
-    domain = "https://reference.medscape.com/drugs/psychiatrics"
+    domain = "https://reference.medscape.com/drugs"
     parser = "html.parser"
     return MedSoup(executable_path, domain, parser)
 

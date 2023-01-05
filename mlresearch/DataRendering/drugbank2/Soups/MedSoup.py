@@ -17,6 +17,7 @@ from . import AbstractUrlsContainer
 class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
 
     def __init__(self, executable_path, domain, parser="html.parser"):
+        self.pages = set()
         self.adverse_effects = [
             "Abdominal cramps",
             "Abdominal pain",
@@ -66,8 +67,9 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
             "Weight gain",
             "Xerostomia"
         ]
-        self.get_all_info(executable_path, parser)
-        super().__init__(executable_path, domain, parser)
+        self.first_soup = self.get_soup(executable_path, domain, parser)
+        self.get_all_urls(self.first_soup, executable_path, domain, parser)
+        self.num, self.end = 0, len(self.pages) - 1
 
     def prepare_driver(self, executable_path):
         return super().prepare_driver(executable_path)
@@ -78,8 +80,33 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
     def get_soup(self, executable_path, url, parser="html.parser"):
         return super().get_soup(executable_path, url, parser)
 
-    def get_all_urls(self, soup, executable_path, domain, parser="html.parser"):
-        super().get_all_urls(soup, executable_path, domain, parser)
+    def get_all_urls(self, s, executable_path, domain, parser="html.parser"):
+        path = "C:/Users/mvmor/OneDrive/Escritorio/MachineLearningResearch/mlresearch/json2/{}.json"
+        ul = s.find("ul", attrs={"class": "classdruglist"})
+        if ul:
+            for a in ul.find_all("a"):
+                if "href" in a.attrs:
+                    href = self.get_adverse_effects(domain, a, path, executable_path, parser)
+                    if href and href not in self.pages:
+                        self.pages.add(href)
+                    with open("links.txt", "w") as links_file:
+                        print(*list(self.pages), sep="\n", file=links_file)
+                    try:
+                        soup = self.get_soup(executable_path, "".join([domain, href]), parser)
+                    except WebDriverException:
+                        soup = self.get_soup(executable_path, href, parser)
+                    if soup.find("ul", attrs={"class": "classdruglist"}):
+                        try:
+                            boolean = self.get_all_urls(soup, executable_path, domain, parser)
+                            continue
+                        except AttributeError:
+                            print(href)
+                            continue
+                    else:
+                        continue
+                else:
+                    continue
+        return True
 
     def compare_effect(self, effect):
         for element in self.adverse_effects:
@@ -87,65 +114,28 @@ class MedSoup(AbstractUrlsContainer, metaclass=ABCMeta):
                 return element
         return effect
 
-    def get_adverse_effects(self, soup, path):
+    def get_adverse_effects(self, domain, a, path, executable_path, parser):
+        name = a.text
+        href = a.attrs["href"]
         try:
-            name = soup.find("span", attrs={"class": "drug_section_link"})
-        except AttributeError:
-            return False
-        if name:
-            name = name.text
-            div = soup.find("div", attrs={"id": "content_4"})
-            if div:
-                div2 = div.find("div", attrs={"class": "refsection_content"})
-                text = [p.text for p in div2.find_all("p") if p.text in self.adverse_effects]
-                text_2 = list(map(self.compare_effect, text))
-                dict_ = {
-                    name: {
-                        key: int(bool(key in text_2)) for key in self.adverse_effects
-                    }
+            soup = self.get_soup(executable_path, "".join([domain, href]), parser)
+        except WebDriverException:
+            soup = self.get_soup(executable_path, href, parser)
+        content = soup.find("div", attrs={"id": "content_4"})
+        if content and not exists(path.format(name.replace("/", "-"))):
+            div = content.find("div", attrs={"class": "refsection_content"})
+            text = [p.text for p in div.find_all("p") if p.text in self.adverse_effects]
+            text_2 = list(map(self.compare_effect, text))
+            dict_ = {
+                name: {
+                    key: int(bool(key in text_2)) for key in self.adverse_effects
                 }
-                if not exists(path.format(name.replace("/","-"))):
-                    with open(path.format(name.replace("/","-")), "w") as js:
-                        dump(dict_, js)
-                    return dict_
-                return False
-            return False
-        return False
+            }
+            with open(path.format(name.replace("/", "-")), "w") as js:
+                dump(dict_, js)
+        return href
 
-    def get_all_info(self, executable_path, parser="html.parser"):
-        path = "C:/Users/mvmor/OneDrive/Escritorio/MachineLearningResearch/mlresearch/json2/{}.json"
-        with open("links.txt", "r") as links_file:
-            links = set([link.strip("\n") for link in links_file.readlines()])
-        links2 = deepcopy(links)
-        for link in links2:
-            links.remove(link)
-            soup = self.get_soup(executable_path, link, parser)
-            if soup:
-                soup2 = soup.find("ul", attrs={"class": "classdruglist" })
-                if soup2:
-                    a = soup2.find_all("a")
-                    for tags in a:
-                        url = tags.attrs["href"]
-                        if url:
-                            s = self.get_soup(executable_path, url, parser)
-                            dict_ = self.get_adverse_effects(s, path)
-                            if dict_:
-                                print(dict_)
-                                continue
-                            else:
-                                with open("links.txt", "w") as l_file:
-                                    links.add(url)
-                                    try:
-                                        print(*list(links), sep="\n", file=l_file)
-                                    except PermissionError:
-                                        print(*list(links), sep="\n")
-                                self.get_all_info(executable_path, parser)
-                        else:
-                            continue
-                else:
-                    continue
-            else:
-                continue
+
 
 
 

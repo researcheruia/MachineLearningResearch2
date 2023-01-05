@@ -1,11 +1,23 @@
 from django.contrib.auth.forms import UserCreationForm
-from django.forms import EmailInput, DateInput, PasswordInput, TextInput
+from django.forms import CharField, EmailInput, DateInput, PasswordInput, TextInput
+from django.utils.translation import gettext_lazy as _
 
 
 from ..models import CustomUser
 
 
 class CustomUserCreationForm(UserCreationForm):
+    password1 = CharField(
+        label=_("Contraseña"),
+        strip=False,
+        widget=PasswordInput(attrs={"class": "form-control"}),
+    )
+    password2 = CharField(
+        label=_("Contraseña (otra vez)"),
+        strip=False,
+        widget=PasswordInput(attrs={"class": "form-control"}),
+    )
+
     class Meta:
         model = CustomUser
         fields = (
@@ -21,9 +33,6 @@ class CustomUserCreationForm(UserCreationForm):
             "last_name": "Apellido",
             "email": "Correo Electrónico",
             "birth_date": "Fecha de Nacimiento",
-            "password1": "Ingrese una Contraseña",
-            "password2": "Repita la Contraseña"
-
         }
         widgets = {
             "username": TextInput(
@@ -51,14 +60,4 @@ class CustomUserCreationForm(UserCreationForm):
                     "class": "form-control"
                 }
             ),
-            "password1": PasswordInput(
-                attrs={
-                    "class": "form-control"
-                }
-            ),
-            "password2": PasswordInput(
-                attrs={
-                    "class": "form-control"
-                }
-            )
         }
